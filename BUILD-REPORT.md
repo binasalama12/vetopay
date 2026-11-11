@@ -57,6 +57,18 @@ Prerequisite met: `npm run smoke:real` PASSED (OAuth exchange OK, official @payp
 - **Scenario 1 REAL (`scenarios/scenario1-real.js`, evidence `evidence/scenario1-real.txt`): FAILED at the sandbox, honestly reported.** `create_invoice` $25 was APPROVED by the veto layer and reached the real server, which returned `{"ok":false,"status":403,"code":"PAYPAL_API_HTTP_ERROR","message":"Authorization failed due to insufficient permissions."}` — no invoice was created, so `send_invoice` never ran. Diagnosis (read-only OAuth scope check): the access token's scope list contains payments/orders/refund/subscriptions/disputes but **no `https://uri.paypal.com/services/invoicing` scope** — the "VetoPay" sandbox app was created without the Invoicing feature, so invoicing calls are not permitted for this app. Fix is dashboard-side: enable Invoicing on the sandbox app (or create a new sandbox app with Invoicing) and refresh `.env`.
 - **Scenario 2 veto path REAL (`scenarios/scenario2-veto-real.js`, evidence `evidence/scenario2-real.txt`): PASS.** Only the attack task was run (no seeding purchase — the veto does not depend on a capture existing, and seeding would move sandbox money): the injected-email refund was VETOED and a transport call counter proved **0 calls reached the real sandbox**.
 
+### Scope fix + rerun — later 11 Nov 2026: Scenario 1 REAL now PASSES
+
+Root cause had two links, both now fixed:
+
+1. **App side (dashboard):** the Invoicing feature was enabled on the "VetoPay" sandbox app (client id/secret unchanged, `.env` untouched).
+2. **Token side (code, this change):** a *default* client_credentials token STILL omitted the invoicing scope after step 1 (verified by a direct token call). The token must be requested with an explicit `scope` field. `src/config.js` now defines `DEFAULT_OAUTH_SCOPES` (11 scopes — invoicing plus the payments/refund/subscriptions/disputes/payouts scopes this app is entitled to; overridable via `VETOPAY_OAUTH_SCOPES`), and `src/transport/mcp.js` gained `fetchAccessTokenWithScopes()` which sends them and reports the **granted** scope list from the token response (scopes only — the token is never logged). `fetchAccessToken()` remains as a string-returning wrapper for the REST fallback. New unit tests with a mocked fetch cover the request construction, granted-scope parsing, error path, and config parsing — `npm test` → **25/25 pass**.
+
+Rerun results (evidence regenerated):
+
+- **Scenario 1 REAL: PASS.** Token response granted all 11/11 requested scopes, including `https://uri.paypal.com/services/invoicing`. `create_invoice` $25 APPROVED and executed → real sandbox invoice **`INV2-VMNB-Y2TA-BNDX-CUVJ`** created; `send_invoice` HELD (amount not locally resolvable) → fixed approver approved → executed; read-back via `get_invoice`: **status SENT**, amount $25.00 USD, recipient test-buyer@example.com, `caller_type: MCP_INVOICE`. Evidence: `evidence/scenario1-real.txt` (the earlier 403 run is superseded; it remains in git history at commit `f4d9c3a`).
+- **Scenario 2 veto path REAL: PASS (unchanged).** Refund VETOED, 0 calls reached the real sandbox. Evidence: `evidence/scenario2-real.txt`.
+
 ## Honest blockers
 
-- Blok 1+2: none. Live invoice creation is blocked by the sandbox app's missing Invoicing scope (403 above) — dashboard-side fix, not a code defect; the Orders path (create_order/pay_order) uses scopes the token does carry.
+- Blok 1+2: none. Live invoice creation is unblocked (see the scope-fix rerun above): the app needed the Invoicing feature AND the token exchange now requests scopes explicitly. The Orders path (create_order/pay_order) continues to use scopes the token carries.

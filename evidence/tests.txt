@@ -2,30 +2,36 @@
 > vetopay@0.1.0 test
 > node --test test/*.test.js
 
-✔ approval prompt shows call, amount, recipient, provenance, reasons and audit entry (1.937828ms)
-✔ approval prompt flags untrusted provenance and unverified amount (0.302253ms)
-✔ toolLabel falls back to the raw tool name for unknown tools (0.360842ms)
-✔ parseApprovalAnswer is fail-closed: only explicit affirmatives approve (0.441663ms)
-✔ CLI approver: typing "decline" declines, "approve" approves (8.132184ms)
-✔ decline path: a HELD call declined at the prompt executes nothing and is audited (7.761167ms)
-✔ e2e scenario 1: benign $25 invoice executes end-to-end (mock) (5.715887ms)
-✔ e2e scenario 2: injected email refund is VETOED and never executed (2.871389ms)
-✔ e2e scenario 3: $750 payment HELD, executes only after human approval (2.491318ms)
-✔ benign $25 invoice from the user is APPROVED (2.190357ms)
-✔ read-only tools are always APPROVED (0.218037ms)
-✔ $750 payment from the user is HELD (amount over limit) (0.658859ms)
-✔ payment to an unknown recipient is HELD (0.234432ms)
-✔ refund ordered by an email is VETOED (0.259089ms)
-✔ money movement ordered by untrusted content with injection phrases is VETOED (0.180661ms)
-✔ refund from the user is HELD (outflow always needs a human) (0.156795ms)
-✔ injection signal detector matches override phrases only (0.199609ms)
-✔ extractFacts sums create_order items with discount and shipping (0.212569ms)
-✔ send_invoice resolves amount through lookup; unknown invoice HELDs safely (0.377596ms)
-ℹ tests 19
+✔ approval prompt shows call, amount, recipient, provenance, reasons and audit entry (2.023797ms)
+✔ approval prompt flags untrusted provenance and unverified amount (0.421222ms)
+✔ toolLabel falls back to the raw tool name for unknown tools (0.235183ms)
+✔ parseApprovalAnswer is fail-closed: only explicit affirmatives approve (0.738719ms)
+✔ CLI approver: typing "decline" declines, "approve" approves (9.194848ms)
+✔ decline path: a HELD call declined at the prompt executes nothing and is audited (62.052934ms)
+✔ e2e scenario 1: benign $25 invoice executes end-to-end (mock) (4.338872ms)
+✔ e2e scenario 2: injected email refund is VETOED and never executed (1.550657ms)
+✔ e2e scenario 3: $750 payment HELD, executes only after human approval (0.94628ms)
+✔ oauth: explicit scopes are sent space-joined and granted scopes parsed (2.877688ms)
+✔ oauth: no scopes requested -> no scope field in the token request (0.469755ms)
+✔ oauth: HTTP error from the token endpoint throws (0.767041ms)
+✔ oauth: fetchAccessToken wrapper still returns the bare token string (0.440882ms)
+✔ oauth scopes config: defaults include invoicing; env override parses (0.581923ms)
+✔ oauth scopes config: getConfig honours VETOPAY_OAUTH_SCOPES (env wins over .env) (1.095935ms)
+✔ benign $25 invoice from the user is APPROVED (2.176897ms)
+✔ read-only tools are always APPROVED (0.205959ms)
+✔ $750 payment from the user is HELD (amount over limit) (0.670677ms)
+✔ payment to an unknown recipient is HELD (0.243556ms)
+✔ refund ordered by an email is VETOED (0.243095ms)
+✔ money movement ordered by untrusted content with injection phrases is VETOED (0.186831ms)
+✔ refund from the user is HELD (outflow always needs a human) (0.164006ms)
+✔ injection signal detector matches override phrases only (0.21283ms)
+✔ extractFacts sums create_order items with discount and shipping (0.237937ms)
+✔ send_invoice resolves amount through lookup; unknown invoice HELDs safely (0.47292ms)
+ℹ tests 25
 ℹ suites 0
-ℹ pass 19
+ℹ pass 25
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 366.486067
+ℹ duration_ms 475.798944

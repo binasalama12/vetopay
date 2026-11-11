@@ -10,6 +10,17 @@
  * POST {apiBase}/v1/oauth2/token (client_credentials grant) —
  * exactly the credentials of the "VetoPay" sandbox REST app.
  *
+ * Scope subtlety (root cause of the scenario-1 403, fixed 11 Nov
+ * 2026): a DEFAULT client_credentials token for this app does not
+ * include the invoicing scope even after the Invoicing feature was
+ * enabled on the app in the dashboard — create_invoice then fails
+ * with 403 "insufficient permissions". The token request must name
+ * the scopes explicitly (`scope` form field); PayPal then grants
+ * the entitled subset, reported in the response's `scope` field.
+ * fetchAccessTokenWithScopes() therefore requests config.oauthScopes
+ * and surfaces exactly what was granted (scope strings only — the
+ * token itself is never logged).
+ *
  * Verified in this repo's dev environment: the server starts, the
  * initialize handshake succeeds and tools/list returns 28 tools
  * (see evidence/mcp-probe.txt). Live tool CALLS need real sandbox
@@ -17,8 +28,17 @@
  */
 import { spawn } from 'node:child_process';
 
-export async function fetchAccessToken({ clientId, clientSecret, apiBase }) {
+/**
+ * Exchange client credentials for an access token, requesting
+ * `scopes` explicitly when given. Returns the token plus the scope
+ * lists so callers can verify what PayPal actually granted (the
+ * response's `scope` field is authoritative; unentitled requested
+ * scopes are silently dropped by PayPal).
+ */
+export async function fetchAccessTokenWithScopes({ clientId, clientSecret, apiBase, scopes = [] }) {
+  const requestedScopes = [...scopes];
   const body = new URLSearchParams({ grant_type: 'client_credentials' });
+  if (requestedScopes.length) body.set('scope', requestedScopes.join(' '));
   const res = await fetch(`${apiBase}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
@@ -30,7 +50,14 @@ export async function fetchAccessToken({ clientId, clientSecret, apiBase }) {
   if (!res.ok) throw new Error(`PayPal OAuth failed: HTTP ${res.status}`);
   const json = await res.json();
   if (!json.access_token) throw new Error('PayPal OAuth: no access_token in response');
-  return json.access_token;
+  const grantedScopes = String(json.scope || '').split(/\s+/).filter(Boolean);
+  return { accessToken: json.access_token, requestedScopes, grantedScopes };
+}
+
+/** Backwards-compatible wrapper: token string only (REST fallback). */
+export async function fetchAccessToken(args) {
+  const { accessToken } = await fetchAccessTokenWithScopes(args);
+  return accessToken;
 }
 
 export class McpPayPalTransport {
@@ -121,8 +148,20 @@ export class McpPayPalTransport {
   }
 }
 
-/** Build the real transport from config (exchanges credentials first). */
-export async function createRealTransport(config) {
-  const accessToken = await fetchAccessToken(config);
-  return new McpPayPalTransport({ accessToken, environment: 'SANDBOX' });
+/** Build the real transport from config (exchanges credentials first,
+ *  requesting config.oauthScopes explicitly and reporting — never the
+ *  token — which scopes PayPal granted). */
+export async function createRealTransport(config, { log = console.log } = {}) {
+  const { accessToken, requestedScopes, grantedScopes } =
+    await fetchAccessTokenWithScopes({ ...config, scopes: config.oauthScopes });
+  const missing = requestedScopes.filter(s => !grantedScopes.includes(s));
+  log(`[oauth] scopes requested=${requestedScopes.length} granted=${grantedScopes.length}` +
+    (missing.length ? ` NOT GRANTED: ${missing.join(' ')}` : ' (all requested scopes granted)'));
+  log(`[oauth] granted scopes: ${grantedScopes.join(' ') || '(none reported)'}`);
+  if (requestedScopes.length && !grantedScopes.some(s => s.endsWith('/invoicing'))) {
+    log('[oauth] WARNING: no invoicing scope granted — create_invoice/send_invoice will 403 at the sandbox.');
+  }
+  const transport = new McpPayPalTransport({ accessToken, environment: 'SANDBOX' });
+  transport.oauthScopes = { requested: requestedScopes, granted: grantedScopes };
+  return transport;
 }

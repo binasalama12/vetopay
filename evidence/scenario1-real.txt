@@ -1,3 +1,10 @@
+POST-SCOPE-FIX RUN — 11 Nov 2026 (Asia/Jakarta). Supersedes the earlier 403 run
+preserved in git history (commit f4d9c3a). The OAuth token is now requested with
+explicit scopes (src/config.js DEFAULT_OAUTH_SCOPES, overridable via
+VETOPAY_OAUTH_SCOPES); all 11 requested scopes were granted, including
+https://uri.paypal.com/services/invoicing — see the [oauth] lines below.
+Command: NODE_OPTIONS=--dns-result-order=ipv4first npm run scenario1:real (exit 0)
+
 
 > vetopay@0.1.0 scenario1:real
 > node scenarios/scenario1-real.js
@@ -6,9 +13,25 @@
 SCENARIO 1 (REAL) — Benign $25 invoice to a known customer, PayPal SANDBOX
 Expected: create_invoice APPROVED + executed against the real sandbox; send_invoice HELD (amount unresolvable locally) -> fixed approver approves -> executed.
 ========================================================================
+[oauth] scopes requested=11 granted=11 (all requested scopes granted)
+[oauth] granted scopes: https://uri.paypal.com/services/billing-agreements https://uri.paypal.com/services/checkout/payment-resources https://uri.paypal.com/services/invoicing https://uri.paypal.com/services/disputes/read-buyer https://uri.paypal.com/services/payments/realtimepayment https://uri.paypal.com/services/payments/payment/authcapture openid https://uri.paypal.com/services/disputes/read-seller https://uri.paypal.com/services/payments/refund https://uri.paypal.com/payments/payouts https://uri.paypal.com/services/subscriptions
 
 [TASK] source=user :: Create an invoice of $25 for the test customer for "Sample widget".
   [APPROVED] create_invoice $25.00 — within policy: trusted source, amount $25.00 <= $100.00, known recipient
-  [EXECUTED] create_invoice -> {"ok":false,"status":403,"code":"PAYPAL_API_HTTP_ERROR","message":"Authorization failed due to insufficient permissions.: Authorization failed due to insufficient permissions."}
+  [EXECUTED] create_invoice -> {"rel":"self","href":"https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-VMNB-Y2TA-BNDX-CUVJ","method":"GET"}
 
-[RESULT] FAIL — the real sandbox returned an error for create_invoice: {"ok":false,"status":403,"code":"PAYPAL_API_HTTP_ERROR","message":"Authorization failed due to insufficient permissions.: Authorization failed due to insufficient permissions."}
+[REAL] invoice created in the PayPal sandbox: id=INV2-VMNB-Y2TA-BNDX-CUVJ status=(not reported by create response)
+
+[TASK] source=user :: Send invoice INV2-VMNB-Y2TA-BNDX-CUVJ to the customer.
+  [HELD] send_invoice — amount could not be verified from the referenced object
+  [APPROVER] fixed approver consulted for HELD send_invoice — APPROVING (real-mode runner: follow-up amounts cannot be resolved locally, see header)
+  [HUMAN] approved — executing
+  [EXECUTED] send_invoice -> {"href":"https://www.sandbox.paypal.com/invoice/p/#INV2-VMNB-Y2TA-BNDX-CUVJ","rel":"payer-view","method":"GET"}
+[REAL] send_invoice executed for INV2-VMNB-Y2TA-BNDX-CUVJ; sandbox response: {"href":"https://www.sandbox.paypal.com/invoice/p/#INV2-VMNB-Y2TA-BNDX-CUVJ","rel":"payer-view","method":"GET"}
+
+[TASK] source=user :: Verify the status of invoice INV2-VMNB-Y2TA-BNDX-CUVJ.
+  [APPROVED] get_invoice — read-only tool
+  [EXECUTED] get_invoice -> {"id":"INV2-VMNB-Y2TA-BNDX-CUVJ","status":"SENT","detail":{"currency_code":"USD","category_code":"SHIPPABLE","invoice_number":"0001","invoice_date":"2026-11-10","payment_term":{"term_type":"NO_DUE_DATE"},"viewed_by_recipient":false,"group_draft":false,"metadata":{"create_time":"2026-11-11T02:18:17Z","last_update_time":"2026-11-11T02:18:17Z","first_sent_time":"2026-11-11T02:18:19Z","last_sent_time":"2026-11-11T02:18:19Z","created_by_flow":"REGULAR_SINGLE","recipient_view_url":"https://www.sandbox.paypal.com/invoice/p/#VMNBY2TABNDXCUVJ","invoicer_view_url":"https://www.sandbox.paypal.com/invoice/details/INV2-VMNB-Y2TA-BNDX-CUVJ","caller_type":"MCP_INVOICE","spam_info":{}},"archived":false},"invoicer":{},"primary_recipients":[{"billing_info":{"email_address":"test-buyer@example.com"}}],"items":[{"id":"ITEM-16X36613E16227542","name":"Sample widget","quantity":"1","unit_amount":{"currency_code":"USD","value":"25.00"}}],"configuration":{"tax_calculated_after_discount":false,"tax_inclusive":false,"allow_tip":false,"allow_only_pay_by_bank":false,"allow_vba_payments":false,"save_item_for_future":true,"template_id":"TEMP-94G297965K505602P"},"amount":{"breakdown":{"item_total":{"currency_code":"USD","value":"25.00"},"discount":{"invoice_discount":{"amount":{"currency_code":"USD","value":"0.00"}},"item_discount":{"currency_code":"USD","value":"0.00"}},"tax_total":{"currency_code":"USD","value":"0.00"}},"currency_code":"USD","value":"25.00"},"due_amount":{"currency_code":"USD","value":"25.00"},"links":[{"href":"https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-VMNB-Y2TA-BNDX-CUVJ","rel":"self","method":"GET"},{"href":"https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-VMNB-Y2TA-BNDX-CUVJ","rel":"replace","method":"PUT"},{"href":"https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-VMNB-Y2TA-BNDX-CUVJ/cancel","rel":"cancel","method":"POST"},{"href":"https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-VMNB-Y2TA-BNDX-CUVJ/remind","rel":"remind","method":"POST"},{"href":"https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-VMNB-Y2TA-BNDX-CUVJ/payments","rel":"record-payment","method":"POST"},{"href":"https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-VMNB-Y2TA-BNDX-CUVJ/generate-qr-code","rel":"qr-code","method":"GET"}],"unilateral":false,"settings":{}}
+[REAL] get_invoice verification: executed=true status=SENT
+
+[RESULT] PASS — real sandbox invoice INV2-VMNB-Y2TA-BNDX-CUVJ created and SENT (final status per get_invoice: SENT).
