@@ -1,0 +1,25 @@
+
+> vetopay@0.1.0 test
+> node --test test/*.test.js
+
+✔ e2e scenario 1: benign $25 invoice executes end-to-end (mock) (5.404011ms)
+✔ e2e scenario 2: injected email refund is VETOED and never executed (2.234033ms)
+✔ e2e scenario 3: $750 payment HELD, executes only after human approval (1.33232ms)
+✔ benign $25 invoice from the user is APPROVED (2.707273ms)
+✔ read-only tools are always APPROVED (0.283406ms)
+✔ $750 payment from the user is HELD (amount over limit) (0.774122ms)
+✔ payment to an unknown recipient is HELD (0.310366ms)
+✔ refund ordered by an email is VETOED (0.364968ms)
+✔ money movement ordered by untrusted content with injection phrases is VETOED (0.296716ms)
+✔ refund from the user is HELD (outflow always needs a human) (0.253821ms)
+✔ injection signal detector matches override phrases only (0.311157ms)
+✔ extractFacts sums create_order items with discount and shipping (0.649655ms)
+✔ send_invoice resolves amount through lookup; unknown invoice HELDs safely (0.521663ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 286.150463

@@ -1,0 +1,35 @@
+VetoPay — live probe of the OFFICIAL PayPal MCP server (@paypal/mcp 1.8.1, server 1.11.0)
+Date: 2026-11-11T01:35:03+00:00
+Command: npx -y @paypal/mcp --tools=all  (env: PAYPAL_ENVIRONMENT=SANDBOX, PAYPAL_ACCESS_TOKEN=<deliberately fake probe token>)
+Method: JSON-RPC initialize + tools/list over stdio. NO real credentials used; NO tool was called.
+
+initialize -> {'name': 'PayPal', 'version': '1.11.0'}
+tools/list -> 28 tools:
+ - create_invoice
+ - list_invoices
+ - get_invoice
+ - send_invoice
+ - send_invoice_reminder
+ - cancel_sent_invoice
+ - generate_invoice_qr_code
+ - create_product
+ - list_products
+ - update_product
+ - show_product_details
+ - create_subscription_plan
+ - list_subscription_plans
+ - show_subscription_plan_details
+ - create_subscription
+ - show_subscription_details
+ - cancel_subscription
+ - create_shipment_tracking
+ - get_shipment_tracking
+ - create_order
+ - get_order
+ - pay_order
+ - list_disputes
+ - get_dispute
+ - accept_dispute_claim
+ - list_transactions
+ - create_refund
+ - get_refund
