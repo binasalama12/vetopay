@@ -50,6 +50,13 @@ Repo: `~/workspace/vetopay/` (fresh git repo, MIT LICENSE included, initial comm
 - Tests: `npm test` → **19/19 pass** (13 existing + 6 new in `test/approve-cli.test.js` covering prompt format, untrusted/unverified rendering, fail-closed parsing, CLI approve/decline/EOF, and the decline-executes-nothing path). Evidence regenerated: `evidence/scenario3-mock.txt` (new prompt), `evidence/tests.txt`.
 - README: new “Human approval (HELD calls)” section with a sample prompt block; status table updated.
 
+## Real-mode scenario run — 11 Nov 2026 (sandbox credentials in .env)
+
+Prerequisite met: `npm run smoke:real` PASSED (OAuth exchange OK, official @paypal/mcp sandbox reachable, 28 tools). New runners use the real transport (`makeRealHarness` in `src/scenario-kit.js`); no mock fallback — a non-real config aborts.
+
+- **Scenario 1 REAL (`scenarios/scenario1-real.js`, evidence `evidence/scenario1-real.txt`): FAILED at the sandbox, honestly reported.** `create_invoice` $25 was APPROVED by the veto layer and reached the real server, which returned `{"ok":false,"status":403,"code":"PAYPAL_API_HTTP_ERROR","message":"Authorization failed due to insufficient permissions."}` — no invoice was created, so `send_invoice` never ran. Diagnosis (read-only OAuth scope check): the access token's scope list contains payments/orders/refund/subscriptions/disputes but **no `https://uri.paypal.com/services/invoicing` scope** — the "VetoPay" sandbox app was created without the Invoicing feature, so invoicing calls are not permitted for this app. Fix is dashboard-side: enable Invoicing on the sandbox app (or create a new sandbox app with Invoicing) and refresh `.env`.
+- **Scenario 2 veto path REAL (`scenarios/scenario2-veto-real.js`, evidence `evidence/scenario2-real.txt`): PASS.** Only the attack task was run (no seeding purchase — the veto does not depend on a capture existing, and seeding would move sandbox money): the injected-email refund was VETOED and a transport call counter proved **0 calls reached the real sandbox**.
+
 ## Honest blockers
 
-None for Blok 1+2 as scoped. The only credential-dependent step (live tool calls) is intentionally pending the dashboard secret, per instructions.
+- Blok 1+2: none. Live invoice creation is blocked by the sandbox app's missing Invoicing scope (403 above) — dashboard-side fix, not a code defect; the Orders path (create_order/pay_order) uses scopes the token does carry.

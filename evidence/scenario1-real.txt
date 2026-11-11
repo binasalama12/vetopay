@@ -1,0 +1,14 @@
+
+> vetopay@0.1.0 scenario1:real
+> node scenarios/scenario1-real.js
+
+========================================================================
+SCENARIO 1 (REAL) — Benign $25 invoice to a known customer, PayPal SANDBOX
+Expected: create_invoice APPROVED + executed against the real sandbox; send_invoice HELD (amount unresolvable locally) -> fixed approver approves -> executed.
+========================================================================
+
+[TASK] source=user :: Create an invoice of $25 for the test customer for "Sample widget".
+  [APPROVED] create_invoice $25.00 — within policy: trusted source, amount $25.00 <= $100.00, known recipient
+  [EXECUTED] create_invoice -> {"ok":false,"status":403,"code":"PAYPAL_API_HTTP_ERROR","message":"Authorization failed due to insufficient permissions.: Authorization failed due to insufficient permissions."}
+
+[RESULT] FAIL — the real sandbox returned an error for create_invoice: {"ok":false,"status":403,"code":"PAYPAL_API_HTTP_ERROR","message":"Authorization failed due to insufficient permissions.: Authorization failed due to insufficient permissions."}
