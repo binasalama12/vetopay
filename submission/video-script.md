@@ -93,7 +93,7 @@ text only.
   "VetoPay — content may describe payments; only the user may order them."
   + repo URL.
 - **Narration (≈40 words):**
-  "Nineteen of nineteen tests pass, zero dependencies, clone and run it
+  "Twenty-five of twenty-five tests pass, zero dependencies, clone and run it
   yourself. Agents are going to move money. VetoPay makes sure they only
   move it when a human actually said so. Thank you."
 

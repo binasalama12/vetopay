@@ -93,7 +93,7 @@ cp .env.example .env        # optional for mock mode
 Runs against a built-in fake transport that mimics the official PayPal MCP tool surface (same 28 tool names, same argument shapes — verified against `@paypal/mcp` 1.8.1 / server 1.11.0, see `evidence/mcp-probe.txt`).
 
 ```bash
-npm test          # 19 unit + end-to-end tests (incl. approval-prompt format + decline path)
+npm test          # 25 unit + end-to-end tests (incl. approval-prompt format + decline path)
 npm run scenario1 # benign invoice      -> APPROVED
 npm run scenario2 # injected refund     -> VETOED
 printf 'y\ny\n' | npm run scenario3   # large payment -> HELD -> approved -> executed
@@ -134,11 +134,11 @@ npm run scenarios # re-generate all evidence transcripts
 
 | Part | Status |
 |---|---|
-| Veto engine + rules | ✅ Implemented, unit-tested (19/19 tests pass) |
+| Veto engine + rules | ✅ Implemented, unit-tested (25/25 tests pass) |
 | 3 demo scenarios (mock mode) | ✅ Run end-to-end; transcripts in `evidence/` |
 | Official `@paypal/mcp` server | ✅ Verified live in our environment: starts, `initialize` handshake OK, `tools/list` returns 28 tools (`evidence/mcp-probe.txt`) |
 | Real-MCP transport code | ✅ Written (stdio JSON-RPC client + OAuth token exchange) |
-| Live sandbox tool calls (real invoice/order/refund) | ⏳ **Pending** — needs the sandbox app secret in `.env` (dashboard-only); run `npm run smoke:real`, then the scenarios with `VETOPAY_MODE=real` |
+| Live sandbox tool calls (real mode) | ✅ **Verified live** — Scenario 1 (benign invoice) ran against the real PayPal MCP server in sandbox: invoice `INV2-VMNB-Y2TA-BNDX-CUVJ` created and sent, status **SENT** (`evidence/scenario1-real.txt`). Scenario 2 (injected refund in an email) was **VETOED** before any transport call — 0 real calls made (`evidence/scenario2-real.txt`) |
 | REST fallback transport | ⚠️ Coded, interface-compatible, **not yet exercised** against the live sandbox |
 | Approval UI | ✅ Polished CLI prompt (Blok 3): full held-call summary (tool/kind, amount, recipient, provenance, numbered reasons, audit entry), explicit fail-closed approve/decline — see “Human approval” above; transcript in `evidence/scenario3-mock.txt` |
 
