@@ -41,6 +41,15 @@ Repo: `~/workspace/vetopay/` (fresh git repo, MIT LICENSE included, initial comm
 3. **Blok 4** — demo video (< 3 min, public YouTube) + Devpost submission, **submit ≤ 12 Nov 23:00 WIB** (hard deadline 13 Nov 03:00 WIB). Not started here (out of scope for this build).
 4. Known limitation: against the real MCP transport, follow-up calls can't resolve amount/recipient locally (server is stateless for us), so the veto layer HELDs them for a human — the safe direction, but worth a live-behavior check in the smoke test.
 
+## Blok 3 — Approval UI polish: DONE (11 Nov 2026)
+
+- `src/approve-cli.js` rewritten: pure, testable `formatApprovalPrompt` + `parseApprovalAnswer`. A HELD prompt now shows tool + plain-language label, kind, amount (or `UNVERIFIED`), recipient(s), provenance (trusted/UNTRUSTED + instruction excerpt), numbered HELD reasons, and the audit entry/file already written for the hold — then an explicit `Decision [approve/decline]` prompt.
+- Fail-closed semantics: only `approve`/`y`/`yes`/`a` executes (legacy `printf 'y\n'` demo scripts keep working); Enter, EOF, `decline`, `no`, or a typo declines.
+- `src/agent.js`: the harness now passes `source`, `instruction`, the `held_for_approval` audit entry, and the audit path to the approver.
+- Decline path re-verified end-to-end (new e2e-style test + manual `printf 'decline\n'` run of scenario 3): HELD call declined → nothing executed, no `tool_executed` audit entry, `human_declined` logged.
+- Tests: `npm test` → **19/19 pass** (13 existing + 6 new in `test/approve-cli.test.js` covering prompt format, untrusted/unverified rendering, fail-closed parsing, CLI approve/decline/EOF, and the decline-executes-nothing path). Evidence regenerated: `evidence/scenario3-mock.txt` (new prompt), `evidence/tests.txt`.
+- README: new “Human approval (HELD calls)” section with a sample prompt block; status table updated.
+
 ## Honest blockers
 
 None for Blok 1+2 as scoped. The only credential-dependent step (live tool calls) is intentionally pending the dashboard secret, per instructions.

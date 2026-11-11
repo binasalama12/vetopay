@@ -16,6 +16,34 @@ Built for the **PayPal AI Hackathon** (target: Best Use of Agentic Commerce). Th
 
 Raw transcripts of all three (mock mode) are in [`evidence/`](evidence/).
 
+## Human approval (HELD calls)
+
+When the veto layer holds a call, the CLI approver (`src/approve-cli.js`) shows one explicit block before asking — nothing is hidden behind a bare `[y/N]`:
+
+```
+========================================================================
+  VetoPay — HUMAN APPROVAL REQUIRED  ·  this call is HELD
+========================================================================
+  Call:       create_order — Create payment order (commits to a payment)
+  Kind:       payment
+  Amount:     $750.00
+  Recipient:  vendor@acme-supplies.example
+  Source:     user (trusted source)
+  Ordered as: "Pay Acme Supplies $750 for the annual tooling contract."
+  Why HELD:
+    1. amount $750.00 exceeds the auto-approve limit of $100.00
+  Audit log:  2026-11-11T02:05:30.193Z · held_for_approval · tool=create_order · decision=HELD
+  Audit file: logs/audit-scenario3.jsonl (append-only; your decision is logged next)
+------------------------------------------------------------------------
+  Approving EXECUTES this call immediately. Declining executes nothing.
+  Type "approve" (or "y") to execute — anything else declines. [default: decline]
+  Decision [approve/decline]:
+```
+
+- **What you see:** the tool + a plain-language label of what it does, its kind, the amount (or `UNVERIFIED` when it can't be resolved from the referenced object), the recipient(s) (or a warning when none resolve), the instruction's provenance (trusted vs **UNTRUSTED** source, plus the instruction text), every HELD reason numbered, and the audit entry already written for this hold.
+- **Approve / decline is fail-closed:** only an explicit `approve` (or `y` / `yes`) executes. `decline`, `no`, Enter, EOF, or a typo all decline — and a declined call executes **nothing**; the harness logs `human_declined` and moves on (covered by end-to-end tests).
+- **Your decision is audited:** `human_approved` / `human_declined` is appended to the same JSONL audit log, right after the `veto_decision` and `held_for_approval` entries for the call.
+
 ## Architecture
 
 ```
@@ -65,11 +93,12 @@ cp .env.example .env        # optional for mock mode
 Runs against a built-in fake transport that mimics the official PayPal MCP tool surface (same 28 tool names, same argument shapes — verified against `@paypal/mcp` 1.8.1 / server 1.11.0, see `evidence/mcp-probe.txt`).
 
 ```bash
-npm test          # 13 unit + end-to-end tests
+npm test          # 19 unit + end-to-end tests (incl. approval-prompt format + decline path)
 npm run scenario1 # benign invoice      -> APPROVED
 npm run scenario2 # injected refund     -> VETOED
 printf 'y\ny\n' | npm run scenario3   # large payment -> HELD -> approved -> executed
-                  # (or run it interactively and answer the prompts yourself)
+                  # (or run it interactively and type "approve" / "decline" at the prompt;
+                  #  printf 'decline\n' | npm run scenario3 shows the decline path — nothing executes)
 npm run scenarios # re-generate all evidence transcripts
 ```
 
@@ -105,13 +134,13 @@ npm run scenarios # re-generate all evidence transcripts
 
 | Part | Status |
 |---|---|
-| Veto engine + rules | ✅ Implemented, unit-tested (13/13 tests pass) |
+| Veto engine + rules | ✅ Implemented, unit-tested (19/19 tests pass) |
 | 3 demo scenarios (mock mode) | ✅ Run end-to-end; transcripts in `evidence/` |
 | Official `@paypal/mcp` server | ✅ Verified live in our environment: starts, `initialize` handshake OK, `tools/list` returns 28 tools (`evidence/mcp-probe.txt`) |
 | Real-MCP transport code | ✅ Written (stdio JSON-RPC client + OAuth token exchange) |
 | Live sandbox tool calls (real invoice/order/refund) | ⏳ **Pending** — needs the sandbox app secret in `.env` (dashboard-only); run `npm run smoke:real`, then the scenarios with `VETOPAY_MODE=real` |
 | REST fallback transport | ⚠️ Coded, interface-compatible, **not yet exercised** against the live sandbox |
-| Approval UI | CLI prompt (Blok 2 scope). Web approval page is Blok 3 polish |
+| Approval UI | ✅ Polished CLI prompt (Blok 3): full held-call summary (tool/kind, amount, recipient, provenance, numbered reasons, audit entry), explicit fail-closed approve/decline — see “Human approval” above; transcript in `evidence/scenario3-mock.txt` |
 
 ## License
 

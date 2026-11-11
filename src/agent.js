@@ -32,7 +32,7 @@ export class AgentHarness {
       const decision = this.veto.analyze(call, {
         source, instructionText: instruction, lookup,
       });
-      this.audit.record('veto_decision', {
+      const vetoEntry = this.audit.record('veto_decision', {
         tool: call.tool, decision: decision.decision,
         reasons: decision.reasons, facts: decision.facts, source,
       });
@@ -46,9 +46,11 @@ export class AgentHarness {
       }
 
       if (decision.decision === DECISIONS.HELD) {
-        this.audit.record('held_for_approval', { tool: call.tool });
+        const heldEntry = this.audit.record('held_for_approval', { tool: call.tool });
         const approved = this.approver
-          ? await this.approver({ call, decision, facts: decision.facts })
+          ? await this.approver({ call, decision, facts: decision.facts,
+              source, instruction, auditEntry: heldEntry || vetoEntry,
+              auditPath: this.audit?.path })
           : false;
         this.audit.record(approved ? 'human_approved' : 'human_declined', { tool: call.tool });
         this.log(approved ? '  [HUMAN] approved — executing'

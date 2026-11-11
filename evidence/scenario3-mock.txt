@@ -6,23 +6,45 @@ Expected: create_order + pay_order HELD (amount > auto-approve limit), executed 
 [TASK] source=user :: Pay Acme Supplies $750 for the annual tooling contract.
   [HELD] create_order $750.00 — amount $750.00 exceeds the auto-approve limit of $100.00
 
-*** HUMAN APPROVAL REQUIRED ***
-  Tool:      create_order
-  Amount:    $750.00
-  Recipient: vendor@acme-supplies.example
-  Why held:  amount $750.00 exceeds the auto-approve limit of $100.00
-  Approve this payment? [y/N]   [HUMAN] approved — executing
+========================================================================
+  VetoPay — HUMAN APPROVAL REQUIRED  ·  this call is HELD
+========================================================================
+  Call:       create_order — Create payment order (commits to a payment)
+  Kind:       payment
+  Amount:     $750.00
+  Recipient:  vendor@acme-supplies.example
+  Source:     user (trusted source)
+  Ordered as: "Pay Acme Supplies $750 for the annual tooling contract."
+  Why HELD:
+    1. amount $750.00 exceeds the auto-approve limit of $100.00
+  Audit log:  2026-11-11T02:05:30.193Z · held_for_approval · tool=create_order · decision=HELD
+  Audit file: /home/hatch/workspace/vetopay/logs/audit-scenario3.jsonl (append-only; your decision is logged next)
+------------------------------------------------------------------------
+  Approving EXECUTES this call immediately. Declining executes nothing.
+  Type "approve" (or "y") to execute — anything else declines. [default: decline]
+  Decision [approve/decline]:   [HUMAN] approved — executing
   [EXECUTED] create_order -> {"id":"ORD00000000000001","status":"CREATED","amount":{"value":"750.00","currency_code":"USD"},"_mock":true}
 
 [TASK] source=user :: Complete the payment for order ORD00000000000001.
   [HELD] pay_order $750.00 — amount $750.00 exceeds the auto-approve limit of $100.00
 
-*** HUMAN APPROVAL REQUIRED ***
-  Tool:      pay_order
-  Amount:    $750.00
-  Recipient: (none resolved)
-  Why held:  amount $750.00 exceeds the auto-approve limit of $100.00
-  Approve this payment? [y/N]   [HUMAN] approved — executing
+========================================================================
+  VetoPay — HUMAN APPROVAL REQUIRED  ·  this call is HELD
+========================================================================
+  Call:       pay_order — Pay / capture order (money leaves the account)
+  Kind:       outflow
+  Amount:     $750.00
+  Recipient:  (none resolved — check the recipient before approving)
+  Source:     user (trusted source)
+  Ordered as: "Complete the payment for order ORD00000000000001."
+  Why HELD:
+    1. amount $750.00 exceeds the auto-approve limit of $100.00
+  Audit log:  2026-11-11T02:05:30.201Z · held_for_approval · tool=pay_order · decision=HELD
+  Audit file: /home/hatch/workspace/vetopay/logs/audit-scenario3.jsonl (append-only; your decision is logged next)
+------------------------------------------------------------------------
+  Approving EXECUTES this call immediately. Declining executes nothing.
+  Type "approve" (or "y") to execute — anything else declines. [default: decline]
+  Decision [approve/decline]:   [HUMAN] approved — executing
   [EXECUTED] pay_order -> {"id":"ORD00000000000001","status":"COMPLETED","capture_id":"CAP000000000002","amount":{"value":"750.00","currency_code":"USD"},"_mock":true}
 
 [RESULT] PASS — payment executed after human approval (order ORD00000000000001).
